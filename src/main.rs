@@ -85,26 +85,34 @@ fn compare_pkg_lists(defs: &Vec<PackageInfo>, installed: &Vec<PackageInfo>) -> V
     out
 }
 
-fn compare_and_install_packages(def_dir: &str, pkg_dir: &str) {
+fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     let pkg_defs = read_user_pkg_defs(def_dir).unwrap();
     let installed_packages = get_installed_pkgs(pkg_dir).unwrap();
-    let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
-
-    for p in to_install {
-        println!("apm install {}@{}", p.name, p.version.to_string());
-    }
+    compare_pkg_lists(&pkg_defs, &installed_packages)
 }
 
 static DEFS_DIR: &str = "./test_files/packages.list";
 static PKGS_DIR: &str = "./test_files/packages";
 
 fn main() {
-    compare_and_install_packages(DEFS_DIR, PKGS_DIR);
+    let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
+
+    for p in to_install {
+        println!("apm install {}@{}", p.name, p.version.to_string());
+    }
 }
 
 mod test {
+    use super::*;
+
     #[test]
     fn check_test_list() {
-        // TODO
+        let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
+        let mapped: Vec<String> = to_install.iter().map(|p| p.to_string()).collect();
+        let res = mapped.join("\n");
+
+        let expected = "ide-rust@0.19.2\nslime@3.4.0";
+
+        assert_eq!(res, expected);
     }
 }

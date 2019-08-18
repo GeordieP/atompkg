@@ -32,6 +32,10 @@ impl PackageInfo {
         Some(parsed_pkg)
     }
 
+    pub fn to_string(&self) -> String {
+        String::from(format!("{}@{}", self.name, self.version.to_string()))
+    }
+
     pub fn compare_versions(first: &PackageInfo, second: &PackageInfo) -> Ordering {
         return SemVer::compare_versions(&first.version, &second.version);
     }
