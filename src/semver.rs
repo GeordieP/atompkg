@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use std::cmp::Ordering;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct SemVer {
     major: u32,
     minor: u32,
@@ -18,21 +18,21 @@ impl SemVer {
     }
 
     pub fn from_str(vers_str: &str) -> SemVer {
-        let mut result = SemVer::new(0, 0, 0);
+        let mut out = SemVer::new(0, 0, 0);
         let segments: Vec<&str> = vers_str.split(".").collect();
 
         if let Some(first) = segments.get(0) {
-            result.major = first.parse::<u32>().unwrap();
+            out.major = first.parse::<u32>().unwrap();
         }
 
         if let Some(first) = segments.get(1) {
-            result.minor = first.parse::<u32>().unwrap();
+            out.minor = first.parse::<u32>().unwrap();
         }
 
         if let Some(first) = segments.get(2) {
-            result.patch = first.parse::<u32>().unwrap();
+            out.patch = first.parse::<u32>().unwrap();
         }
-        result
+        out
     }
 
     pub fn to_string(&self) -> String {

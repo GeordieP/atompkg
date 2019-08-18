@@ -1,9 +1,9 @@
-use std::cmp::Ordering;
 use serde::Deserialize;
+use std::cmp::Ordering;
 
 use crate::semver::SemVer;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct PackageInfo {
     pub name: String,
     pub version: SemVer,

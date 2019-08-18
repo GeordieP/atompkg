@@ -1,6 +1,6 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+#![allow(unused)]
 
+use std::cmp::Ordering;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -66,25 +66,50 @@ fn read_user_pkg_defs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
     Ok(package_infos)
 }
 
+// look through defs, for each def's name, find an installed pkg with matching name.
+// if a match IS NOT found, add the def to the output.
+// if a match IS found, compare versions. If def version is higher, add def to the output.
+fn compare_pkg_lists(defs: &Vec<PackageInfo>, installed: &Vec<PackageInfo>) -> Vec<PackageInfo> {
+    let mut out: Vec<PackageInfo> = Vec::new();
+
+    for def in defs {
+        match installed.iter().find(|&pkg| pkg.name == def.name) {
+            None => out.push(def.clone()),
+            Some(p) => match PackageInfo::compare_versions(def, p) {
+                Ordering::Greater => out.push(def.clone()),
+                _ => {}
+            },
+        }
+    }
+
+    out
+}
+
 fn main() {
     // user's package list
     let pkg_defs = read_user_pkg_defs("/home/gp/.atom/packages.list").unwrap();
 
-    println!("There are {} packages defined\n", pkg_defs.len());
+    // println!("There are {} packages defined\n", pkg_defs.len());
 
-    for p in pkg_defs {
-        println!("{}@{}", p.name, p.version.to_string());
-    }
+    // for p in pkg_defs {
+    //     println!("{}@{}", p.name, p.version.to_string());
+    // }
 
     // already installed packages
     let installed_packages = get_installed_pkgs("/home/gp/.atom/packages").unwrap();
 
-    println!(
-        "\nThere are {} packages installed\n",
-        installed_packages.len()
-    );
+    // println!(
+    //     "\nThere are {} packages installed\n",
+    //     installed_packages.len()
+    // );
 
-    for p in installed_packages {
-        println!("{}@{}", p.name, p.version.to_string());
+    // for p in installed_packages {
+    //     println!("{}@{}", p.name, p.version.to_string());
+    // }
+
+    let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
+
+    for p in to_install {
+        println!("apm install {}@{}", p.name, p.version.to_string());
     }
 }
