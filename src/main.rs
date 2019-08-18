@@ -24,7 +24,7 @@ fn parse_pkg_json_file(file_path: PathBuf) -> SimpleResult<PackageInfo> {
 fn get_installed_pkgs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
     let paths = match fs::read_dir(dir) {
         Ok(r) => r,
-        Err(e) => panic!("Could not open the packages directory: {:?}", e),
+        Err(e) => panic!("Could not open the packages directory \"{}\" {:?}", dir, e),
     };
 
     let installed_pkgs = paths
@@ -85,31 +85,26 @@ fn compare_pkg_lists(defs: &Vec<PackageInfo>, installed: &Vec<PackageInfo>) -> V
     out
 }
 
-fn main() {
-    // user's package list
-    let pkg_defs = read_user_pkg_defs("/home/gp/.atom/packages.list").unwrap();
-
-    // println!("There are {} packages defined\n", pkg_defs.len());
-
-    // for p in pkg_defs {
-    //     println!("{}@{}", p.name, p.version.to_string());
-    // }
-
-    // already installed packages
-    let installed_packages = get_installed_pkgs("/home/gp/.atom/packages").unwrap();
-
-    // println!(
-    //     "\nThere are {} packages installed\n",
-    //     installed_packages.len()
-    // );
-
-    // for p in installed_packages {
-    //     println!("{}@{}", p.name, p.version.to_string());
-    // }
-
+fn compare_and_install_packages(def_dir: &str, pkg_dir: &str) {
+    let pkg_defs = read_user_pkg_defs(def_dir).unwrap();
+    let installed_packages = get_installed_pkgs(pkg_dir).unwrap();
     let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
 
     for p in to_install {
         println!("apm install {}@{}", p.name, p.version.to_string());
+    }
+}
+
+static DEFS_DIR: &str = "./test_files/packages.list";
+static PKGS_DIR: &str = "./test_files/packages";
+
+fn main() {
+    compare_and_install_packages(DEFS_DIR, PKGS_DIR);
+}
+
+mod test {
+    #[test]
+    fn check_test_list() {
+        // TODO
     }
 }

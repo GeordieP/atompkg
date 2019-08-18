@@ -1,0 +1,54 @@
+{
+  "_from": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+  "_id": "tsx-tags-autocomplete@0.1.0",
+  "_inBundle": false,
+  "_integrity": "sha512-YAQP72GHqbR2AZhzwxAzpbEIRuK3ly6v4NF09DjS9goGp0mMIa1MTR+dXJ7RvrG87rMTa3iUYqi5WCEZKj1G0w==",
+  "_location": "/tsx-tags-autocomplete",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "remote",
+    "raw": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+    "rawSpec": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+    "saveSpec": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+    "fetchSpec": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+  "_shasum": "3b2893f6ba081d09faf2df72c82b1b49e4b4179c",
+  "_spec": "https://www.atom.io/api/packages/tsx-tags-autocomplete/versions/0.1.0/tarball",
+  "_where": "/tmp/apm-install-dir-119715-7531-jmg2m.i4jqnc",
+  "activationCommands": [],
+  "bugs": {
+    "url": "https://github.com/anta-semenov/tsx-tags-autocomplete/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "Autocomplete tags in tsx",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "homepage": "https://github.com/anta-semenov/tsx-tags-autocomplete#readme",
+  "keywords": [
+    "tsx",
+    "tags",
+    "autocomplete"
+  ],
+  "license": "MIT",
+  "main": "./lib/tags-autocomplete",
+  "name": "tsx-tags-autocomplete",
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "JSXCompleteProvider"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anta-semenov/tsx-tags-autocomplete.git"
+  },
+  "version": "0.1.0"
+}

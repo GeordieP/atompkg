@@ -1,0 +1,45 @@
+{
+  "_from": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+  "_id": "slime@2.4.0",
+  "_inBundle": false,
+  "_integrity": "sha512-yUEDBQVJJGPpyspzDE6WMFoE+aiMVzmbfWfwHOj3PrJZ9Fdz/AkDfOpgEiF8MNuJPYBf/W6EKgDMbAIXFh1ASA==",
+  "_location": "/slime",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "remote",
+    "raw": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+    "rawSpec": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+    "saveSpec": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+    "fetchSpec": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+  "_shasum": "c35f1ec141ad0d311b5a7caebafbf6c5b7e9a4c1",
+  "_spec": "https://www.atom.io/api/packages/slime/versions/2.4.0/tarball",
+  "_where": "/tmp/apm-install-dir-119715-7542-1awh755.47g4",
+  "bugs": {
+    "url": "https://github.com/smlombardi/slime/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "Colorful without being insane",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "homepage": "https://github.com/smlombardi/slime#readme",
+  "keywords": [
+    "syntax",
+    "theme"
+  ],
+  "license": "MIT",
+  "name": "slime",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smlombardi/slime.git"
+  },
+  "theme": "syntax",
+  "version": "2.4.0"
+}
