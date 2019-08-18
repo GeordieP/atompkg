@@ -1,4 +1,6 @@
-use serde::Deserialize;
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -6,35 +8,13 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::vec::Vec;
 
+mod package_info;
+mod semver;
+use crate::package_info::PackageInfo;
+
 type SimpleResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Deserialize, Debug)]
-struct PackageInfo {
-    name: String,
-    version: String,
-}
-
-impl PackageInfo {
-    fn from_pkg_string(pkg_str: &str) -> Option<PackageInfo> {
-        if pkg_str.is_empty() {
-            return None;
-        }
-        let segments: Vec<&str> = pkg_str.split("@").collect();
-
-        if segments.len() < 2 {
-            println!("skipping line {}", pkg_str);
-            return None;
-        }
-
-        let parsed_pkg = PackageInfo {
-            name: String::from(segments[0]),
-            version: String::from(segments[1]),
-        };
-        Some(parsed_pkg)
-    }
-}
-
-fn read_pkg_json(file_path: PathBuf) -> SimpleResult<PackageInfo> {
+fn parse_pkg_json_file(file_path: PathBuf) -> SimpleResult<PackageInfo> {
     let file = File::open(file_path)?;
     let contents_reader = BufReader::new(file);
     let parsed = serde_json::from_reader(contents_reader)?;
@@ -57,7 +37,7 @@ fn get_installed_pkgs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
             let mut p = p.unwrap().path();
             p.push("package.json");
 
-            match read_pkg_json(p) {
+            match parse_pkg_json_file(p) {
                 Ok(pkg_info) => Some(pkg_info),
                 _ => None,
             }
@@ -79,7 +59,7 @@ fn read_user_pkg_defs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
             let l = l.unwrap();
 
             let pkg_string_line = l.as_str();
-            PackageInfo::from_pkg_string(&pkg_string_line)
+            PackageInfo::from_pkg_str(&pkg_string_line)
         })
         .collect();
 
@@ -87,24 +67,24 @@ fn read_user_pkg_defs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
 }
 
 fn main() {
+    // user's package list
     let pkg_defs = read_user_pkg_defs("/home/gp/.atom/packages.list").unwrap();
 
     println!("There are {} packages defined\n", pkg_defs.len());
 
     for p in pkg_defs {
-        println!("{}@{}", p.name, p.version);
+        println!("{}@{}", p.name, p.version.to_string());
     }
 
-    /* ------------------ */
+    // already installed packages
+    let installed_packages = get_installed_pkgs("/home/gp/.atom/packages").unwrap();
 
-    // let installed_packages = get_installed_pkgs("/home/gp/.atom/packages").unwrap();
+    println!(
+        "\nThere are {} packages installed\n",
+        installed_packages.len()
+    );
 
-    // println!(
-    //     "There are {} packages installed\n",
-    //     installed_packages.len()
-    // );
-
-    // for p in installed_packages {
-    //     println!("{}@{}", p.name, p.version);
-    // }
+    for p in installed_packages {
+        println!("{}@{}", p.name, p.version.to_string());
+    }
 }
