@@ -7,6 +7,8 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::vec::Vec;
+use std::process::Command;
+use std::thread;
 
 mod package_info;
 mod semver;
@@ -94,12 +96,33 @@ fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
 static DEFS_DIR: &str = "./test_files/packages.list";
 static PKGS_DIR: &str = "./test_files/packages";
 
+fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
+    let mut child_procs = vec![];
+    for p in pkgs {
+        child_procs.push(thread::spawn(move || {
+            println!("starting apm install {}", p.to_string());
+
+            let output = Command::new("apm")
+                .arg("install")
+                .arg(p.to_string())
+                .output()
+                .expect("Could not run command");
+
+            let output_str = std::str::from_utf8(&output.stdout).expect("Could not parse string");
+            println!("{}", output_str);
+        }));
+    }
+
+    for child in child_procs {
+        let _ = child.join();
+    }
+
+    Ok(())
+}
+
 fn main() {
     let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
-
-    for p in to_install {
-        println!("apm install {}@{}", p.name, p.version.to_string());
-    }
+    install_all_pkgs(to_install);
 }
 
 mod test {

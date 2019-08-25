@@ -2,7 +2,7 @@
 
 atom-ide-ui@0.13.0
 ex-mode@0.18.0
-ide-rust@0.19.2
+ide-rust@0.21.0
 ide-typescript@0.8.0
 language-rust@0.4.12
 pigments@0.40.2
