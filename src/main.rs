@@ -93,8 +93,6 @@ fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     compare_pkg_lists(&pkg_defs, &installed_packages)
 }
 
-static DEFS_DIR: &str = "./test_files/packages.list";
-static PKGS_DIR: &str = "./test_files/packages";
 
 fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
     let mut child_procs = vec![];
@@ -120,10 +118,29 @@ fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
     Ok(())
 }
 
+
+static DEFS_DIR: &str = "./test_files/packages.list";
+static PKGS_DIR: &str = "./test_files/packages";
+static PARALLEL_INSTALLS: usize = 5;
+
+fn ceil(value: f64, scale: u8) -> f64 {
+	let multiplier = 10i64.pow(scale as u32) as f64;
+	(value * multiplier).ceil() / multiplier
+}
+
 fn main() {
     let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
-    install_all_pkgs(to_install);
+
+    let iterations = ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
+
+    for i in 0..iterations {
+        // on last iteration, do slice &vec[index..] ?
+    }
+
+    // install_all_pkgs(to_install);
 }
+
+/* Tests */
 
 mod test {
     use super::*;
