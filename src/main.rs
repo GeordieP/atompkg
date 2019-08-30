@@ -93,13 +93,10 @@ fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     compare_pkg_lists(&pkg_defs, &installed_packages)
 }
 
-
 fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
     let mut child_procs = vec![];
     for p in pkgs {
         child_procs.push(thread::spawn(move || {
-            println!("starting apm install {}", p.to_string());
-
             let output = Command::new("apm")
                 .arg("install")
                 .arg(p.to_string())
@@ -107,7 +104,6 @@ fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
                 .expect("Could not run command");
 
             let output_str = std::str::from_utf8(&output.stdout).expect("Could not parse string");
-            println!("{}", output_str);
         }));
     }
 
@@ -120,7 +116,8 @@ fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
 
 
 static DEFS_DIR: &str = "./test_files/packages.list";
-static PKGS_DIR: &str = "./test_files/packages";
+// static PKGS_DIR: &str = "./test_files/packages-all";
+static PKGS_DIR: &str = "./test_files/packages-few";
 static PARALLEL_INSTALLS: usize = 5;
 
 fn ceil(value: f64, scale: u8) -> f64 {
@@ -130,14 +127,24 @@ fn ceil(value: f64, scale: u8) -> f64 {
 
 fn main() {
     let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
+    let mut iterations = ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
 
-    let iterations = ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
-
-    for i in 0..iterations {
-        // on last iteration, do slice &vec[index..] ?
+    if iterations == 0 {
+        iterations = 1;
     }
 
-    // install_all_pkgs(to_install);
+    for i in 0..iterations {
+        let start = i * PARALLEL_INSTALLS;
+
+        let end = if start + PARALLEL_INSTALLS > to_install.len() {
+            to_install.len()
+        } else {
+            start + PARALLEL_INSTALLS
+        };
+
+        let slice = &to_install[start..end];
+        install_all_pkgs(slice.to_vec());
+    }
 }
 
 /* Tests */
