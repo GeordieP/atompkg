@@ -6,9 +6,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::vec::Vec;
 use std::process::Command;
 use std::thread;
+use std::vec::Vec;
 
 mod package_info;
 mod semver;
@@ -71,16 +71,17 @@ fn read_user_pkg_defs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
 // look through defs, for each def's name, find an installed pkg with matching name.
 // if a match IS NOT found, add the def to the output.
 // if a match IS found, compare versions. If def version is higher, add def to the output.
-fn compare_pkg_lists(defs: &Vec<PackageInfo>, installed: &Vec<PackageInfo>) -> Vec<PackageInfo> {
+fn compare_pkg_lists(defs: &[PackageInfo], installed: &[PackageInfo]) -> Vec<PackageInfo> {
     let mut out: Vec<PackageInfo> = Vec::new();
 
     for def in defs {
         match installed.iter().find(|&pkg| pkg.name == def.name) {
             None => out.push(def.clone()),
-            Some(p) => match PackageInfo::compare_versions(def, p) {
-                Ordering::Greater => out.push(def.clone()),
-                _ => {}
-            },
+            Some(p) => {
+                if let Ordering::Greater = PackageInfo::compare_versions(def, p) {
+                    out.push(def.clone());
+                }
+            }
         }
     }
 
@@ -114,19 +115,34 @@ fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
     Ok(())
 }
 
-
-static DEFS_DIR: &str = "./test_files/packages.list";
+static DEFS_FILE: &str = "./test_files/packages.list";
 // static PKGS_DIR: &str = "./test_files/packages-all";
 static PKGS_DIR: &str = "./test_files/packages-few";
 static PARALLEL_INSTALLS: usize = 5;
 
 fn ceil(value: f64, scale: u8) -> f64 {
-	let multiplier = 10i64.pow(scale as u32) as f64;
-	(value * multiplier).ceil() / multiplier
+    let multiplier = 10i64.pow(u32::from(scale)) as f64;
+    (value * multiplier).ceil() / multiplier
+}
+
+fn dump_installed_packages() {
+    let installed_list =
+        get_installed_pkgs(PKGS_DIR).expect("Couldn't get installed packages list");
+
+    let installed_strs: Vec<String> = installed_list.iter().map(|p| p.to_string()).collect();
+
+    fs::write(
+        "./test_files/packages-debug.list",
+        installed_strs.join("\n"),
+    );
 }
 
 fn main() {
-    let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
+    dump_installed_packages();
+}
+
+fn main_off() {
+    let to_install = get_list_to_install(DEFS_FILE, PKGS_DIR);
     let mut iterations = ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
 
     if iterations == 0 {
@@ -154,7 +170,7 @@ mod test {
 
     #[test]
     fn check_test_list() {
-        let to_install = get_list_to_install(DEFS_DIR, PKGS_DIR);
+        let to_install = get_list_to_install(DEFS_FILE, PKGS_DIR);
         let mapped: Vec<String> = to_install.iter().map(|p| p.to_string()).collect();
         let res = mapped.join("\n");
 
