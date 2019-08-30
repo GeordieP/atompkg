@@ -1,92 +1,22 @@
 #![allow(unused)]
 
-use std::cmp::Ordering;
 use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::process::Command;
-use std::thread;
 use std::vec::Vec;
 
 mod package_info;
+mod packages;
 mod semver;
+mod util;
+
 use crate::package_info::PackageInfo;
+use crate::packages::*;
+use crate::util::SimpleResult;
 
-type SimpleResult<T> = Result<T, Box<dyn std::error::Error>>;
-
-fn parse_pkg_json_file(file_path: PathBuf) -> SimpleResult<PackageInfo> {
-    let file = File::open(file_path)?;
-    let contents_reader = BufReader::new(file);
-    let parsed = serde_json::from_reader(contents_reader)?;
-    Ok(parsed)
-}
-
-fn get_installed_pkgs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
-    let paths = match fs::read_dir(dir) {
-        Ok(r) => r,
-        Err(e) => panic!("Could not open the packages directory \"{}\" {:?}", dir, e),
-    };
-
-    let installed_pkgs = paths
-        .filter_map(|p| {
-            if let Err(e) = p {
-                println!("[ERR] Unable to parse path {:?}", e);
-                return None;
-            }
-
-            let mut p = p.unwrap().path();
-            p.push("package.json");
-
-            match parse_pkg_json_file(p) {
-                Ok(pkg_info) => Some(pkg_info),
-                _ => None,
-            }
-        })
-        .collect();
-
-    Ok(installed_pkgs)
-}
-
-fn read_user_pkg_defs(dir: &str) -> SimpleResult<Vec<PackageInfo>> {
-    let file = File::open(dir)?;
-    let package_infos = BufReader::new(file)
-        .lines()
-        .filter_map(|l| {
-            if let Err(_e) = l {
-                return None;
-            }
-
-            let l = l.unwrap();
-
-            let pkg_string_line = l.as_str();
-            PackageInfo::from_pkg_str(&pkg_string_line)
-        })
-        .collect();
-
-    Ok(package_infos)
-}
-
-// look through defs, for each def's name, find an installed pkg with matching name.
-// if a match IS NOT found, add the def to the output.
-// if a match IS found, compare versions. If def version is higher, add def to the output.
-fn compare_pkg_lists(defs: &[PackageInfo], installed: &[PackageInfo]) -> Vec<PackageInfo> {
-    let mut out: Vec<PackageInfo> = Vec::new();
-
-    for def in defs {
-        match installed.iter().find(|&pkg| pkg.name == def.name) {
-            None => out.push(def.clone()),
-            Some(p) => {
-                if let Ordering::Greater = PackageInfo::compare_versions(def, p) {
-                    out.push(def.clone());
-                }
-            }
-        }
-    }
-
-    out
-}
+static DEFS_FILE: &str = "./test_files/packages.list";
+// static PKGS_DIR: &str = "./test_files/packages-all";
+// static PKGS_DIR: &str = "./test_files/packages-few";
+static PKGS_DIR: &str = "/home/gp/.atom/packages";
+static PARALLEL_INSTALLS: usize = 5;
 
 fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     let pkg_defs = read_user_pkg_defs(def_dir).unwrap();
@@ -94,56 +24,18 @@ fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     compare_pkg_lists(&pkg_defs, &installed_packages)
 }
 
-fn install_all_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
-    let mut child_procs = vec![];
-    for p in pkgs {
-        child_procs.push(thread::spawn(move || {
-            let output = Command::new("apm")
-                .arg("install")
-                .arg(p.to_string())
-                .output()
-                .expect("Could not run command");
-
-            let output_str = std::str::from_utf8(&output.stdout).expect("Could not parse string");
-        }));
-    }
-
-    for child in child_procs {
-        let _ = child.join();
-    }
-
-    Ok(())
-}
-
-static DEFS_FILE: &str = "./test_files/packages.list";
-// static PKGS_DIR: &str = "./test_files/packages-all";
-static PKGS_DIR: &str = "./test_files/packages-few";
-static PARALLEL_INSTALLS: usize = 5;
-
-fn ceil(value: f64, scale: u8) -> f64 {
-    let multiplier = 10i64.pow(u32::from(scale)) as f64;
-    (value * multiplier).ceil() / multiplier
-}
-
-fn dump_installed_packages() {
+fn dump_installed_packages(packages_dir: &str, definitions_file: &str) {
     let installed_list =
         get_installed_pkgs(PKGS_DIR).expect("Couldn't get installed packages list");
 
     let installed_strs: Vec<String> = installed_list.iter().map(|p| p.to_string()).collect();
 
-    fs::write(
-        "./test_files/packages-debug.list",
-        installed_strs.join("\n"),
-    );
+    fs::write(definitions_file, installed_strs.join("\n"));
 }
 
-fn main() {
-    dump_installed_packages();
-}
-
-fn main_off() {
-    let to_install = get_list_to_install(DEFS_FILE, PKGS_DIR);
-    let mut iterations = ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
+fn install_or_update_packages(packages_dir: &str, definitions_file: &str) {
+    let to_install = get_list_to_install(definitions_file, packages_dir);
+    let mut iterations = util::ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
 
     if iterations == 0 {
         iterations = 1;
@@ -159,8 +51,13 @@ fn main_off() {
         };
 
         let slice = &to_install[start..end];
-        install_all_pkgs(slice.to_vec());
+        install_pkgs(slice.to_vec());
     }
+}
+
+fn main() {
+    install_or_update_packages(PKGS_DIR, DEFS_FILE);
+    // dump_installed_packages(PKGS_DIR, DEFS_FILE);
 }
 
 /* Tests */
@@ -168,13 +65,16 @@ fn main_off() {
 mod test {
     use super::*;
 
+    static TEST_DEFS_FILE: &str = "./test_files/packages.list";
+    static TEST_PKGS_DIR: &str = "./test_files/packages-all";
+
     #[test]
     fn check_test_list() {
-        let to_install = get_list_to_install(DEFS_FILE, PKGS_DIR);
+        let to_install = get_list_to_install(TEST_DEFS_FILE, TEST_PKGS_DIR);
         let mapped: Vec<String> = to_install.iter().map(|p| p.to_string()).collect();
         let res = mapped.join("\n");
 
-        let expected = "ide-rust@0.19.2\nslime@3.4.0";
+        let expected = "ide-rust@0.21.0\nslime@3.4.0";
 
         assert_eq!(res, expected);
     }
