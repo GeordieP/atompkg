@@ -63,14 +63,6 @@ fn install_or_update_packages(
     }
 }
 
-fn parse_args(matches) -> SimpleResult<()> {
-    if matches.is_present("dump") {
-        dump_installed_packages(PKGS_DIR, DEFS_FILE);
-        println!("Dump finished");
-        return ();
-    }
-}
-
 fn main() {
     let matches = App::new("atompkg")
         .version("1.0")
@@ -87,9 +79,10 @@ fn main() {
         .get_matches();
 
     if matches.is_present("dump") {
+        dump_installed_packages(PKGS_DIR, DEFS_FILE);
+        println!("Dump finished");
+        std::process::exit(0);
     }
-
-
 
     if matches.is_present("install") {
         if let Some(matches) = matches.subcommand_matches("install") {
@@ -105,7 +98,6 @@ fn main() {
 
         println!("Install finished");
         std::process::exit(0);
-    } else if matches.is_present("dump") {
     }
 }
 
