@@ -1,8 +1,4 @@
 #![allow(unused)]
-
-use std::fs;
-use std::vec::Vec;
-
 mod package_info;
 mod packages;
 mod semver;
@@ -12,11 +8,17 @@ use crate::package_info::PackageInfo;
 use crate::packages::*;
 use crate::util::SimpleResult;
 
+#[macro_use]
+extern crate clap;
+
+use clap::{App, Arg, SubCommand};
+use std::fs;
+use std::vec::Vec;
+
 static DEFS_FILE: &str = "./test_files/packages.list";
 // static PKGS_DIR: &str = "./test_files/packages-all";
 // static PKGS_DIR: &str = "./test_files/packages-few";
 static PKGS_DIR: &str = "/home/gp/.atom/packages";
-static PARALLEL_INSTALLS: usize = 5;
 
 fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
     let pkg_defs = read_user_pkg_defs(def_dir).unwrap();
@@ -33,21 +35,27 @@ fn dump_installed_packages(packages_dir: &str, definitions_file: &str) {
     fs::write(definitions_file, installed_strs.join("\n"));
 }
 
-fn install_or_update_packages(packages_dir: &str, definitions_file: &str) {
+fn install_or_update_packages(
+    packages_dir: &str,
+    definitions_file: &str,
+    parallel_installs: usize,
+) {
     let to_install = get_list_to_install(definitions_file, packages_dir);
-    let mut iterations = util::ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
+    let mut iterations = util::ceil(to_install.len() as f64 / parallel_installs as f64, 0) as usize;
+
+    println!("parallel installs {}", parallel_installs);
 
     if iterations == 0 {
         iterations = 1;
     }
 
     for i in 0..iterations {
-        let start = i * PARALLEL_INSTALLS;
+        let start = i * parallel_installs;
 
-        let end = if start + PARALLEL_INSTALLS > to_install.len() {
+        let end = if start + parallel_installs > to_install.len() {
             to_install.len()
         } else {
-            start + PARALLEL_INSTALLS
+            start + parallel_installs
         };
 
         let slice = &to_install[start..end];
@@ -55,9 +63,50 @@ fn install_or_update_packages(packages_dir: &str, definitions_file: &str) {
     }
 }
 
+fn parse_args(matches) -> SimpleResult<()> {
+    if matches.is_present("dump") {
+        dump_installed_packages(PKGS_DIR, DEFS_FILE);
+        println!("Dump finished");
+        return ();
+    }
+}
+
 fn main() {
-    install_or_update_packages(PKGS_DIR, DEFS_FILE);
-    // dump_installed_packages(PKGS_DIR, DEFS_FILE);
+    let matches = App::new("atompkg")
+        .version("1.0")
+        .author("Geordie P <gp@gpow.ca>")
+        .about("Syncs Atom packages with a local definitions file.")
+        .subcommand(SubCommand::with_name("install")
+            .about("Installs or upgrades all Atom packages based on what is listed in your ~/.atom/packages.list file")
+            .arg(Arg::with_name("batchsize")
+                 .takes_value(true)
+                 .short("b")
+                 .long("batchsize")))
+        .subcommand(SubCommand::with_name("dump")
+                    .about("Dumps all installed Atom packages and their version to ~/.atom/packages.list"))
+        .get_matches();
+
+    if matches.is_present("dump") {
+    }
+
+
+
+    if matches.is_present("install") {
+        if let Some(matches) = matches.subcommand_matches("install") {
+            let batch_size: usize = if let Some(arg) = matches.value_of("batchsize") {
+                arg.parse::<usize>()
+                    .expect("Couldn't parse number from batchsize argument")
+            } else {
+                5
+            };
+
+            install_or_update_packages(PKGS_DIR, DEFS_FILE, batch_size);
+        }
+
+        println!("Install finished");
+        std::process::exit(0);
+    } else if matches.is_present("dump") {
+    }
 }
 
 /* Tests */
