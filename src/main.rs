@@ -73,7 +73,7 @@ fn main() {
                  .short("b")
                  .long("batchsize")))
         .subcommand(SubCommand::with_name("dump")
-                    .about("Dumps all installed Atom packages and their version to ~/.atom/packages.list"))
+            .about("Dumps all installed Atom packages and their version to ~/.atom/packages.list"))
         .get_matches();
 
     if matches.is_present("dump") {
