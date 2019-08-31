@@ -43,8 +43,6 @@ fn install_or_update_packages(
     let to_install = get_list_to_install(definitions_file, packages_dir);
     let mut iterations = util::ceil(to_install.len() as f64 / parallel_installs as f64, 0) as usize;
 
-    println!("parallel installs {}", parallel_installs);
-
     if iterations == 0 {
         iterations = 1;
     }
@@ -85,16 +83,13 @@ fn main() {
     }
 
     if matches.is_present("install") {
-        if let Some(matches) = matches.subcommand_matches("install") {
-            let batch_size: usize = if let Some(arg) = matches.value_of("batchsize") {
-                arg.parse::<usize>()
-                    .expect("Couldn't parse number from batchsize argument")
-            } else {
-                5
-            };
+        let batch_size = matches
+            .subcommand_matches("install")
+            .map(|matches| matches.value_of("batchsize"))
+            .map(|batch_size| batch_size.unwrap_or("").parse::<usize>().unwrap_or(5))
+            .unwrap();
 
-            install_or_update_packages(PKGS_DIR, DEFS_FILE, batch_size);
-        }
+        install_or_update_packages(PKGS_DIR, DEFS_FILE, batch_size);
 
         println!("Install finished");
         std::process::exit(0);
@@ -103,6 +98,7 @@ fn main() {
 
 /* Tests */
 
+#[cfg(test)]
 mod test {
     use super::*;
 
