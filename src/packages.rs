@@ -7,6 +7,9 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 
+use threadpool::ThreadPool;
+use std::sync::mpsc::channel;
+
 use crate::package_info::PackageInfo;
 use crate::util::SimpleResult;
 
@@ -82,24 +85,31 @@ pub fn compare_pkg_lists(defs: &[PackageInfo], installed: &[PackageInfo]) -> Vec
     out
 }
 
-pub fn install_pkgs(pkgs: Vec<PackageInfo>) -> SimpleResult<()> {
-    let mut child_procs = vec![];
+pub fn install_pkgs(pkgs: Vec<PackageInfo>, pool_size: usize) -> SimpleResult<()> {
+    let num_pkgs = pkgs.len();
+    let pool = ThreadPool::new(pool_size);
+    let (sender, receiver) = channel::<String>();
+
     for p in pkgs {
-        child_procs.push(thread::spawn(move || {
+        let sender = sender.clone();
+
+        pool.execute(move|| {
             let output = Command::new("apm")
                 .arg("install")
                 .arg(p.to_string())
                 .output()
                 .expect("Could not run command");
 
-            let output_str = std::str::from_utf8(&output.stdout).expect("Could not parse string");
-            println!("{}", output_str);
-        }));
+            let msg = std::str::from_utf8(&output.stdout)
+                .expect("Could not parse string");
+
+            sender.send(String::from(msg));
+        });
     }
 
-    for child in child_procs {
-        let _ = child.join();
-    }
+    receiver.iter().take(num_pkgs).for_each(|msg| {
+        print!("{}", msg);
+    });
 
     Ok(())
 }
