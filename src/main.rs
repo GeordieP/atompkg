@@ -35,24 +35,8 @@ fn dump_installed_packages(packages_dir: &str, definitions_file: &str) {
 
 fn install_or_update_packages(packages_dir: &str, definitions_file: &str) {
     let to_install = get_list_to_install(definitions_file, packages_dir);
-    let mut iterations = util::ceil(to_install.len() as f64 / PARALLEL_INSTALLS as f64, 0) as usize;
-
-    if iterations == 0 {
-        iterations = 1;
-    }
-
-    for i in 0..iterations {
-        let start = i * PARALLEL_INSTALLS;
-
-        let end = if start + PARALLEL_INSTALLS > to_install.len() {
-            to_install.len()
-        } else {
-            start + PARALLEL_INSTALLS
-        };
-
-        let slice = &to_install[start..end];
-        install_pkgs(slice.to_vec());
-    }
+    install_pkgs(to_install, PARALLEL_INSTALLS);
+    println!("Package install complete");
 }
 
 fn main() {
