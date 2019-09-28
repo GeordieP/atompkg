@@ -10,10 +10,6 @@ pub struct PackageInfo {
 }
 
 impl PackageInfo {
-    pub fn new(name: String, version: SemVer) -> PackageInfo {
-        PackageInfo { name, version }
-    }
-
     pub fn from_pkg_str(pkg_str: &str) -> Option<PackageInfo> {
         if pkg_str.is_empty() {
             return None;
