@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 
-use threadpool::ThreadPool;
 use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
 
 use crate::package_info::PackageInfo;
 use crate::util::SimpleResult;
@@ -93,15 +93,14 @@ pub fn install_pkgs(pkgs: Vec<PackageInfo>, pool_size: usize) -> SimpleResult<()
     for p in pkgs {
         let sender = sender.clone();
 
-        pool.execute(move|| {
+        pool.execute(move || {
             let output = Command::new("apm")
                 .arg("install")
                 .arg(p.to_string())
                 .output()
                 .expect("Could not run command");
 
-            let msg = std::str::from_utf8(&output.stdout)
-                .expect("Could not parse string");
+            let msg = std::str::from_utf8(&output.stdout).expect("Could not parse string");
 
             sender.send(String::from(msg));
         });

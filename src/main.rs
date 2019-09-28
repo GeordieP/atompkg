@@ -17,32 +17,11 @@ use std::vec::Vec;
 
 static DEFS_FILE: &str = "./test_files/packages.list";
 // static PKGS_DIR: &str = "./test_files/packages-all";
-// static PKGS_DIR: &str = "./test_files/packages-few";
-static PKGS_DIR: &str = "/home/gp/.atom/packages";
+static PKGS_DIR: &str = "./test_files/packages-few";
+// static PKGS_DIR: &str = "/home/gp/.atom/packages";
 
-fn get_list_to_install(def_dir: &str, pkg_dir: &str) -> Vec<PackageInfo> {
-    let pkg_defs = read_user_pkg_defs(def_dir).unwrap();
-    let installed_packages = get_installed_pkgs(pkg_dir).unwrap();
-    compare_pkg_lists(&pkg_defs, &installed_packages)
-}
-
-fn dump_installed_packages(packages_dir: &str, definitions_file: &str) {
-    let installed_list =
-        get_installed_pkgs(PKGS_DIR).expect("Couldn't get installed packages list");
-
-    let installed_strs: Vec<String> = installed_list.iter().map(|p| p.to_string()).collect();
-
-    fs::write(definitions_file, installed_strs.join("\n"));
-}
-
-fn install_or_update_packages(
-    packages_dir: &str,
-    definitions_file: &str,
-    parallel_installs: usize,
-) {
-    let to_install = get_list_to_install(definitions_file, packages_dir);
-    install_pkgs(to_install, PARALLEL_INSTALLS);
-    println!("Package install complete");
+macro_rules! log {
+    ($($arg:tt)*) => (println!("[atompkg] {}", format!($($arg)*)))
 }
 
 fn main() {
@@ -54,6 +33,7 @@ fn main() {
             .about("Installs or upgrades all Atom packages based on what is listed in your ~/.atom/packages.list file")
             .arg(Arg::with_name("batchsize")
                  .takes_value(true)
+                 .default_value("5")
                  .short("b")
                  .long("batchsize")))
         .subcommand(SubCommand::with_name("dump")
@@ -61,8 +41,14 @@ fn main() {
         .get_matches();
 
     if matches.is_present("dump") {
-        dump_installed_packages(PKGS_DIR, DEFS_FILE);
-        println!("Dump finished");
+        let installed_list =
+            get_installed_pkgs(PKGS_DIR).expect("Couldn't get installed packages list");
+
+        let installed_strs: Vec<String> = installed_list.iter().map(|p| p.to_string()).collect();
+
+        fs::write(DEFS_FILE, installed_strs.join("\n"));
+
+        log!("Package dump finished");
         std::process::exit(0);
     }
 
@@ -70,12 +56,19 @@ fn main() {
         let batch_size = matches
             .subcommand_matches("install")
             .map(|matches| matches.value_of("batchsize"))
-            .map(|batch_size| batch_size.unwrap_or("").parse::<usize>().unwrap_or(5))
-            .unwrap();
+            .map(|batch_size| batch_size.unwrap().parse::<usize>().unwrap())
+            .expect("Could not parse batch size");
 
-        install_or_update_packages(PKGS_DIR, DEFS_FILE, batch_size);
+        let pkg_defs = read_user_pkg_defs(DEFS_FILE).unwrap();
+        let installed_packages = get_installed_pkgs(PKGS_DIR).unwrap();
+        let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
 
-        println!("Install finished");
+        log!("{} packages listed, {} already installed", pkg_defs.len(), installed_packages.len());
+
+        log!("Installing {} packages", to_install.len());
+        install_pkgs(to_install, batch_size);
+        log!("Package install finished");
+
         std::process::exit(0);
     }
 }
@@ -91,7 +84,10 @@ mod test {
 
     #[test]
     fn check_test_list() {
-        let to_install = get_list_to_install(TEST_DEFS_FILE, TEST_PKGS_DIR);
+        let pkg_defs = read_user_pkg_defs(TEST_DEFS_FILE).unwrap();
+        let installed_packages = get_installed_pkgs(TEST_PKGS_DIR).unwrap();
+        let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
+
         let mapped: Vec<String> = to_install.iter().map(|p| p.to_string()).collect();
         let res = mapped.join("\n");
 
