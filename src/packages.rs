@@ -5,13 +5,12 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::Command;
-use std::thread;
 
 use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
 use crate::package_info::PackageInfo;
-use crate::util::SimpleResult;
+use crate::SimpleResult;
 
 pub fn parse_pkg_json_file(file_path: PathBuf) -> SimpleResult<PackageInfo> {
     let file = File::open(file_path)?;
@@ -102,7 +101,9 @@ pub fn install_pkgs(pkgs: Vec<PackageInfo>, pool_size: usize) -> SimpleResult<()
 
             let msg = std::str::from_utf8(&output.stdout).expect("Could not parse string");
 
-            sender.send(String::from(msg));
+            sender
+                .send(String::from(msg))
+                .expect("Could not send command output through channel");
         });
     }
 

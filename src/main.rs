@@ -1,15 +1,8 @@
-#![allow(unused)]
 mod package_info;
 mod packages;
 mod semver;
-mod util;
 
-use crate::package_info::PackageInfo;
 use crate::packages::*;
-use crate::util::SimpleResult;
-
-#[macro_use]
-extern crate clap;
 
 use clap::{App, Arg, SubCommand};
 use std::fs;
@@ -19,6 +12,8 @@ static DEFS_FILE: &str = "./test_files/packages.list";
 // static PKGS_DIR: &str = "./test_files/packages-all";
 static PKGS_DIR: &str = "./test_files/packages-few";
 // static PKGS_DIR: &str = "/home/gp/.atom/packages";
+
+pub type SimpleResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 macro_rules! log {
     ($($arg:tt)*) => (println!("[atompkg] {}", format!($($arg)*)))
@@ -46,7 +41,8 @@ fn main() {
 
         let installed_strs: Vec<String> = installed_list.iter().map(|p| p.to_string()).collect();
 
-        fs::write(DEFS_FILE, installed_strs.join("\n"));
+        fs::write(DEFS_FILE, installed_strs.join("\n"))
+            .expect("Could not write to definitions file");
 
         log!("Package dump finished");
         std::process::exit(0);
@@ -63,10 +59,14 @@ fn main() {
         let installed_packages = get_installed_pkgs(PKGS_DIR).unwrap();
         let to_install = compare_pkg_lists(&pkg_defs, &installed_packages);
 
-        log!("{} packages listed, {} already installed", pkg_defs.len(), installed_packages.len());
+        log!(
+            "{} packages listed, {} already installed",
+            pkg_defs.len(),
+            installed_packages.len()
+        );
 
         log!("Installing {} packages", to_install.len());
-        install_pkgs(to_install, batch_size);
+        install_pkgs(to_install, batch_size).expect("Failed to install packages");
         log!("Package install finished");
 
         std::process::exit(0);
